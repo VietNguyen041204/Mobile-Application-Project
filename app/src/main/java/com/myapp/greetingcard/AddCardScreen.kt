@@ -7,6 +7,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -18,6 +19,7 @@ import androidx.navigation.NavHostController
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import com.myapp.greetingcard.R
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 
@@ -36,7 +38,12 @@ fun AddCardScreen(navigator: NavHostController,
 
     var vnWord by rememberSaveable { mutableStateOf("") }
 
-    changeMessage("please add card")
+    val initialMessage = stringResource(id = R.string.add_study_cards)
+    val successMessage = stringResource(id = R.string.card_added_success)
+
+    LaunchedEffect(key1 =true) {
+        changeMessage(initialMessage)
+    }
     Column() {
 
         TextField(
@@ -70,15 +77,15 @@ fun AddCardScreen(navigator: NavHostController,
                 "TEST", "Adding a card with words: "
 
                         + enWord + " and " + vnWord
-
             )
 
+            changeMessage(successMessage)
 
         }
 
         ) {
 
-            Text("Add")
+            Text(stringResource(id = R.string.add_button_label))
 
         }
 

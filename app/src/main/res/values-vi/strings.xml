@@ -2,6 +2,7 @@
     <string name="app_name">Greeting Card</string>
     <string name="English_label">Tiếng Anh</string>
     <string name="Vietnamese_label">Tiếng Việt</string>
-    <string name="add_study_cards">Thêm thẻ nhé</string>
-
+    <string name="add_button_label">Thêm</string>
+    <string name="add_study_cards">Xin hãy thêm thẻ học tập</string>
+    <string name="card_added_success">Thẻ đã được thêm thành công vào cơ sở dữ liệu</string>
 </resources>

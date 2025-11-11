@@ -2,6 +2,7 @@
     <string name="app_name">Greeting Card</string>
     <string name="English_label">English</string>
     <string name="Vietnamese_label">Vietnamese</string>
-    <string name="add_study_cards">Add Study Cards</string>
-
+    <string name="add_button_label">Add</string>
+    <string name="add_study_cards">Please add study card</string>
+    <string name="card_added_success">Card added successfully to the database</string>
 </resources>
