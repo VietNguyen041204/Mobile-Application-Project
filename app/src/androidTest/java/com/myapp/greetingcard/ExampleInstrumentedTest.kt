@@ -1,8 +1,13 @@
 package com.myapp.greetingcard
 
 import Navigator
+import android.os.LocaleList
+import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.Locales
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -23,6 +28,7 @@ import org.junit.runner.RunWith
 
 import org.junit.Assert.*
 import org.junit.Rule
+
 
 
 /**
@@ -50,6 +56,7 @@ class MyComposeTest {
         composeTestRule.onNodeWithText("An Nam").assertIsDisplayed()
 
     }
+
     @Test
     fun backButtonAddCard() {
         // Start the app
@@ -64,8 +71,9 @@ class MyComposeTest {
 
 
     }
+
     @Test
-    fun goBackTest(){
+    fun goBackTest() {
 //        composeTestRule.setContent {
 //            Navigator()
 //        }
@@ -76,12 +84,11 @@ class MyComposeTest {
     }
 
     @Test
-    fun homeStartDestination(){
+    fun homeStartDestination() {
         val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
         navController.navigatorProvider.addNavigator(ComposeNavigator())
         composeTestRule.setContent {
             Navigator(navController)
-
 
 
         }
@@ -113,8 +120,39 @@ class MyComposeTest {
 
 
     }
-}
 
+    @Test
+    fun displayMessage() {
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+        navController.navigatorProvider.addNavigator(ComposeNavigator())
+        composeTestRule.setContent {
+
+            Navigator(navController)
+        }
+        // Navigate to the Add Card-screen
+        composeTestRule.runOnUiThread {
+            navController.navigate("add_card")
+
+        }
+        composeTestRule.onNodeWithContentDescription("Message")
+            .assertExists()
+            .assert(hasText("Welcome"))
+
+    }
+//    @Test
+//    fun viDisplayEmptyEnglish() {
+//        composeTestRule.setContent {
+//            DeviceConfigurationOverride(
+//                DeviceConfigurationOverride.Locales(LocaleList("vi"))
+//            ) {
+//                AddCardScreen()
+//            }
+//        }
+//
+//        composeTestRule.onNodeWithContentDescription("EnTextInput")
+//            .assertTextEquals("Tiếng Anh", "")
+//    }
+}
 //    @Test
 //    fun homeScreenTest(){
 //        composeTestRule.setContent {

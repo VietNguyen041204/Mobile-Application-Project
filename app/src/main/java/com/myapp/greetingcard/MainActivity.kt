@@ -29,6 +29,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +39,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 val navController = rememberNavController()
+                val db = Room.databaseBuilder(
+                    applicationContext,
+                    AnNamDatabase::class.java, "An Nam database"
+                ).build()
+                val flashCardDao = db.flashCardDao()
+                //testing
+                runBlocking {
+
+                    val flashCard = flashCardDao.getAll()
+                    Log.d("AnNam",flashCard.toString() )
+
+                }
                 //Navigator()
                 Navigator(navController)
             }

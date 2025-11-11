@@ -18,11 +18,10 @@ import androidx.navigation.NavHostController
 
 @Composable
 fun HomeScreen(
-    navigator: NavHostController
+    navigator: NavHostController,
+    changeMessage: (String) -> Unit
 ) {
-//    Scaffold(modifier = Modifier.fillMaxSize()) {
-//        innerPadding
-//        ->
+
     Column(
         modifier = Modifier
             .fillMaxSize(),
@@ -31,6 +30,7 @@ fun HomeScreen(
     ) {
         Button(onClick = {
             navigator.navigate(route = "study_cards")
+            changeMessage("Study Cards...")
             Log.d("TEST", "Navigating to StudyWordsScreen...")
         }) { Text("Study Cards") }
 
@@ -38,6 +38,7 @@ fun HomeScreen(
 
         Button(onClick = {
             navigator.navigate(route = "add_card")
+            changeMessage("Add Card...")
             Log.d("TEST", "Navigating to AddCardScreen...")
         }) { Text("Add Card") }
 

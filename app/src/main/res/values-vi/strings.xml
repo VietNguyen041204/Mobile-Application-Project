@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Greeting Card</string>
+    <string name="English_label">Tiếng Anh</string>
+    <string name="Vietnamese_label">Tiếng Việt</string>
+    <string name="add_study_cards">Thêm thẻ nhé</string>
+
+</resources>
