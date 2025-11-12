@@ -1,52 +1,47 @@
 package com.myapp.greetingcard
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 
 @Composable
 fun HomeScreen(
-    navigator: NavHostController,
+    navigateToAddCard: () -> Unit,
+    navigateToStudyCards: () -> Unit,
+    navigateToSearchCards: () -> Unit,
     changeMessage: (String) -> Unit
 ) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Button(onClick = {
-            navigator.navigate(route = "study_cards")
-            changeMessage("Study Cards...")
-            Log.d("TEST", "Navigating to StudyWordsScreen...")
-        }) { Text("Study Cards") }
-
-        Spacer(Modifier.height(16.dp))
-
-        Button(onClick = {
-            navigator.navigate(route = "add_card")
-            changeMessage("Add Card...")
-            Log.d("TEST", "Navigating to AddCardScreen...")
-        }) { Text("Add Card") }
-
-        Spacer(Modifier.height(16.dp))
-
-        Button(onClick = {
-            navigator.navigate("search_cards") }) { Text("Search Card") }
+    LaunchedEffect(Unit) {
+        changeMessage("Please, select an option.")
     }
 
-}
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
 
+        Button(modifier = Modifier.semantics{contentDescription="navigateToStudyCards"},
+            onClick = {
+                navigateToStudyCards()
+            })
+        { Text("Study Cards", modifier = Modifier.semantics{contentDescription="StudyCards"},) }
+        Button(modifier = Modifier.semantics{contentDescription="navigateToAddCard"},
+            onClick = {
+                navigateToAddCard()
+            }) {
+            Text("Add Card", modifier = Modifier.semantics{contentDescription="AddCard"},)
+        }
+        Button(modifier = Modifier.semantics{contentDescription="navigateToSearchCards"},onClick = {
+            navigateToSearchCards()
+        }) { Text("Search Cards", modifier = Modifier.semantics{contentDescription="SearchCards"},) }
+
+    }
+}

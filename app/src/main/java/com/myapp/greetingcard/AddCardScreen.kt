@@ -1,94 +1,76 @@
 package com.myapp.greetingcard
 
-import android.R.attr.contentDescription
-import android.util.Log
+import android.database.sqlite.SQLiteConstraintException
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavHostController
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
-import com.myapp.greetingcard.R
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.launch
+
 
 @Composable
+fun AddCardScreen(
+    changeMessage: (String) -> Unit,
+    insertFlashCard: suspend (FlashCard) -> Unit
+) {
+    var enWord by remember {mutableStateOf("")}
+    var vnWord by remember {mutableStateOf("")}
 
-fun AddCardScreen(navigator: NavHostController,
-                  changeMessage: (String) -> Unit) {
-//
-//    var enWord = ""
-//
-//    var vnWord = ""
+    val scope = rememberCoroutineScope()
 
-//    var enWord by remember { mutableStateOf("") }
-//    //rotate and the words i type gone
-//    var vnWord by remember { mutableStateOf("") }
-
-    var enWord by rememberSaveable { mutableStateOf("") }
-
-    var vnWord by rememberSaveable { mutableStateOf("") }
-
-    val initialMessage = stringResource(id = R.string.add_study_cards)
-    val successMessage = stringResource(id = R.string.card_added_success)
-
-    LaunchedEffect(key1 =true) {
-        changeMessage(initialMessage)
+    LaunchedEffect(Unit) {
+        changeMessage("Please, add a flash card.")
     }
+
     Column() {
-
         TextField(
-
             value = enWord,
-
             onValueChange = { enWord = it },
-
-            modifier = Modifier.semantics{contentDescription = "English String"},
-
-            label = { Text(stringResource(id = R.string.English_label))
-            }
-
-
+            modifier = Modifier.semantics { contentDescription = "enTextField" },
+            label = { Text("en") }
         )
-
         TextField(
-
             value = vnWord,
-
             onValueChange = { vnWord = it },
-
-            label = { Text(stringResource(id = R.string.Vietnamese_label)) }
-
+            modifier = Modifier.semantics { contentDescription = "vnTextField" },
+            label = { Text("vn") }
         )
-
-        Button(onClick = {
-
-            Log.d(
-
-                "TEST", "Adding a card with words: "
-
-                        + enWord + " and " + vnWord
-            )
-
-            changeMessage(successMessage)
-
-        }
-
-        ) {
-
-            Text(stringResource(id = R.string.add_button_label))
-
-        }
-
+        Button(
+            modifier = Modifier.semantics { contentDescription = "Add" },
+            onClick = {
+                //insertFlashCard(FlashCard(uid = 0, englishCard = enWord, vietnameseCard = vnWord))
+                scope.launch {
+                    try {
+                        insertFlashCard(
+                            FlashCard(
+                                uid = 0,
+                                englishCard = enWord,
+                                vietnameseCard = vnWord
+                            )
+                        )
+                        enWord = ""
+                        vnWord = ""
+                        changeMessage("The flash card has been added to your database")
+                    } catch (e: SQLiteConstraintException) {
+                        changeMessage("The flash card already exists in your database")
+                    } catch (e: Exception) {
+                        changeMessage("Something went wrong")
+                    }
+                }
+            }
+        )
+            {
+                Text("Add")
+            }
     }
-
 }

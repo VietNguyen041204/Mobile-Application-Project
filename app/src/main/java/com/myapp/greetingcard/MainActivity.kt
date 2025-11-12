@@ -1,33 +1,11 @@
 package com.myapp.greetingcard
-import Navigator
-import androidx.compose.ui.graphics.Color
+
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-
-import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.ui.Alignment
-import androidx.compose.material3.Button
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import kotlinx.coroutines.runBlocking
@@ -44,6 +22,7 @@ class MainActivity : ComponentActivity() {
                     AnNamDatabase::class.java, "An Nam database"
                 ).build()
                 val flashCardDao = db.flashCardDao()
+                //flashCardDao.insertAll(FlashCard(uid = 0, englishCard = "Hello", vietnameseCard = "Xin chào"))
                 //testing
                 runBlocking {
 
@@ -52,7 +31,7 @@ class MainActivity : ComponentActivity() {
 
                 }
                 //Navigator()
-                Navigator(navController)
+                Navigator(navController, flashCardDao)
             }
         }
     }
