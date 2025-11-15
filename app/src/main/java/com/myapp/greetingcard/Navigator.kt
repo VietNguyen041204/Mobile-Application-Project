@@ -25,7 +25,26 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import kotlinx.serialization.Serializable
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
+
+
+@Serializable
+object Home
+
+@Serializable
+object AddCard
+
+@Serializable
+object StudyCards
+
+@Serializable
+object SearchCards
+
+@Serializable
+data class ShowCard(val cardId: Int)
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,13 +55,13 @@ fun Navigator(
 ) {
     var message by remember { mutableStateOf("") }
     val navigateToAddCard = fun() {
-        navController.navigate("add_card")
+        navController.navigate(AddCard)
     }
     val navigateToStudyCards = fun() {
-        navController.navigate("study_cards")
+        navController.navigate(StudyCards)
     }
     val navigateToSearchCards = fun() {
-        navController.navigate("search_cards")
+        navController.navigate(SearchCards)
     }
     val changeMessage = fun(text:String){
         message = text
@@ -56,7 +75,14 @@ fun Navigator(
         flashCardDao.getAll()
     }
 
-    //val allFlashCards by remember {mutableStateOf()}
+    val deleteFlashCard: suspend (FlashCard) -> Unit = { flashCard ->
+        flashCardDao.delete(flashCard)
+    }
+
+    val getFlashCardById: suspend (Int) -> FlashCard? = { id ->
+        flashCardDao.getCardById(id)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -72,9 +98,10 @@ fun Navigator(
                     }
                 },
                 navigationIcon = {
-                    val currentRoute =
-                        navController.currentBackStackEntryAsState().value?.destination?.route
-                    if (currentRoute != "home") {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
+
+                    if (currentRoute != null && currentRoute != navController.graph.findStartDestination().route) {
                         Button(
                             modifier = Modifier.semantics{contentDescription="navigateBack"},
                             onClick = {
@@ -105,10 +132,10 @@ fun Navigator(
             modifier = Modifier.padding(innerPadding)
                 .fillMaxWidth(),
             navController = navController,
-            startDestination = "home"
+            startDestination = Home
         ) {
             // HOME
-            composable(route = "home") {
+            composable<Home> {
                 HomeScreen(
                     changeMessage = changeMessage,
                     navigateToAddCard = navigateToAddCard,
@@ -117,22 +144,36 @@ fun Navigator(
                 )
             }
             // ADD CARD
-            composable(route = "add_card") {
+            composable<AddCard> {
                 AddCardScreen(
                     changeMessage = changeMessage,
                     insertFlashCard = insertFlashCard
                 )
             }
             // STUDY CARDS
-            composable(route = "study_cards") {
+            composable<StudyCards> {
                 StudyCardsScreen(
                 )
             }
             // SEARCH CARDS
-            composable(route = "search_cards") {
+            composable<SearchCards> {
                 SearchCardsScreen(
                     getAllFlashCards = getAllFlashCards,
-                    selectedItem = {}
+                    selectedItem = { flashCard ->
+                        navController.navigate(ShowCard(flashCard.uid))
+                    }
+                )
+            }
+
+            // SHOW CARD SCREEN
+            composable<ShowCard> { backStackEntry ->
+                val args = backStackEntry.toRoute<ShowCard>()  // Get the type-safe arguments
+                ShowCardScreen(
+                    cardId = args.cardId,
+                    getFlashCardById = getFlashCardById,
+                    deleteFlashCard = deleteFlashCard,
+                    navigateBack = { navController.navigateUp() },
+                    changeMessage = changeMessage
                 )
             }
         }

@@ -10,7 +10,7 @@ plugins {
 
     id("com.google.devtools.ksp")
 
-
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -116,7 +116,9 @@ dependencies {
     // Needed for createComposeRule(), but not for createAndroidComposeRule<YourActivity>():
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.9.3")
-// Needed for createComposeRule(), but not for createAndroidComposeRule<YourActivity>():
+    // Needed for createComposeRule(), but not for createAndroidComposeRule<YourActivity>():
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("androidx.navigation:navigation-compose:2.9.6")
 }
 // Test rules and transitive dependencies:

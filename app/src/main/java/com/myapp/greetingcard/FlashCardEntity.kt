@@ -13,7 +13,7 @@ import androidx.room.RoomDatabase
 
 @Entity(tableName = "FlashCards",
     indices = [Index(value = ["english_card","vietnamese_card"],
-    unique = true)])
+        unique = true)])
 data class FlashCard(
     @PrimaryKey(autoGenerate = true) val uid: Int,
     @ColumnInfo(name = "english_card") val englishCard: String?,
@@ -32,11 +32,14 @@ interface FlashCardDao {
             "vietnamese_card LIKE :vietnamese LIMIT 1")
     suspend fun findByCards(english: String, vietnamese: String): FlashCard
 
+    @Query("SELECT * FROM FlashCards WHERE uid = :id")
+    suspend fun getCardById(id: Int): FlashCard?
+
     @Insert
     suspend fun insertAll(vararg flashCard: FlashCard)
 
     @Delete
-    fun delete(flashCard: FlashCard)
+    suspend fun delete(flashCard: FlashCard)
 }
 
 @Database(entities = [FlashCard::class], version = 1)
