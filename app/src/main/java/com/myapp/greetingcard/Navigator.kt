@@ -31,57 +31,34 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 
-@Serializable
-object Home
-
-@Serializable
-object AddCard
-
-@Serializable
-object StudyCards
-
-@Serializable
-object SearchCards
-
-@Serializable
-data class ShowCard(val cardId: Int)
+@Serializable object Home
+@Serializable object AddCard
+@Serializable object StudyCards
+@Serializable object SearchCards
+@Serializable object Login
+@Serializable data class EditCard(val english: String, val vietnamese: String)
+// NEW: Token Route
+@Serializable data class Token(val email: String)
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Navigator(
     navController: NavHostController,
-    flashCardDao: FlashCardDao
+    flashCardDao: FlashCardDao,
+    networkService: NetworkService
 ) {
     var message by remember { mutableStateOf("") }
-    val navigateToAddCard = fun() {
-        navController.navigate(AddCard)
-    }
-    val navigateToStudyCards = fun() {
-        navController.navigate(StudyCards)
-    }
-    val navigateToSearchCards = fun() {
-        navController.navigate(SearchCards)
-    }
-    val changeMessage = fun(text:String){
-        message = text
-    }
+    val changeMessage = { text:String -> message = text }
 
-    val insertFlashCard: suspend (FlashCard) -> Unit = { flashCard ->
-        flashCardDao.insertAll(flashCard)
+    // Helpers
+    val insertFlashCard: suspend (FlashCard) -> Unit = { flashCardDao.insertAll(it) }
+    val getAllFlashCards: suspend () -> List<FlashCard> = { flashCardDao.getAll() }
+    val deleteFlashCard: suspend (String, String) -> Unit = { eng, vn -> flashCardDao.deleteFlashCard(eng, vn) }
+    val updateFlashCard: suspend (String, String, String, String) -> Unit = { oldEng, oldVn, newEng, newVn ->
+        flashCardDao.updateByContent(oldEng, oldVn, newEng, newVn)
     }
-
-    val getAllFlashCards: suspend () -> List<FlashCard> = {
-        flashCardDao.getAll()
-    }
-
-    val deleteFlashCard: suspend (FlashCard) -> Unit = { flashCard ->
-        flashCardDao.delete(flashCard)
-    }
-
-    val getFlashCardById: suspend (Int) -> FlashCard? = { id ->
-        flashCardDao.getCardById(id)
-    }
+    val getLesson: suspend (Int) -> List<FlashCard> = { size -> flashCardDao.getLesson(size) }
 
     Scaffold(
         topBar = {
@@ -90,23 +67,15 @@ fun Navigator(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
-                title = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = "An Nam Study Room"
-                        )
-                    }
-                },
+                title = { Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { Text("An Nam Study Room") } },
                 navigationIcon = {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
-
-                    if (currentRoute != null && currentRoute != navController.graph.findStartDestination().route) {
+                    // Logic to show Back button only if NOT on Home
+                    if (currentRoute != null && !currentRoute.endsWith("Home")) {
                         Button(
                             modifier = Modifier.semantics{contentDescription="navigateBack"},
-                            onClick = {
-                                navController.navigateUp()
-                            }) {
+                            onClick = { navController.navigateUp() }) {
                             Text("Back")
                         }
                     }
@@ -114,67 +83,66 @@ fun Navigator(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                actions = {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .semantics {
-                                contentDescription = "Message"
-                            },
-                        textAlign = TextAlign.Center,
-                        text = message
-                    )
-                })
+            BottomAppBar {
+                Text(modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, text = message)
+            }
         }
     ) { innerPadding ->
         NavHost(
-            modifier = Modifier.padding(innerPadding)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(innerPadding).fillMaxWidth(),
             navController = navController,
             startDestination = Home
         ) {
-            // HOME
             composable<Home> {
                 HomeScreen(
-                    changeMessage = changeMessage,
-                    navigateToAddCard = navigateToAddCard,
-                    navigateToStudyCards = navigateToStudyCards,
-                    navigateToSearchCards = navigateToSearchCards
+                    navigateToAddCard = { navController.navigate(AddCard) },
+                    navigateToStudyCards = { navController.navigate(StudyCards) },
+                    navigateToSearchCards = { navController.navigate(SearchCards) },
+                    navigateToLogin = { navController.navigate(Login) },
+                    changeMessage = changeMessage
                 )
             }
-            // ADD CARD
             composable<AddCard> {
-                AddCardScreen(
-                    changeMessage = changeMessage,
-                    insertFlashCard = insertFlashCard
-                )
+                AddCardScreen(changeMessage, insertFlashCard)
             }
-            // STUDY CARDS
-            composable<StudyCards> {
-                StudyCardsScreen(
-                )
-            }
-            // SEARCH CARDS
             composable<SearchCards> {
                 SearchCardsScreen(
                     getAllFlashCards = getAllFlashCards,
-                    selectedItem = { flashCard ->
-                        navController.navigate(ShowCard(flashCard.uid))
-                    }
+                    onEditClick = { eng, vn -> navController.navigate(EditCard(eng, vn)) },
+                    onDeleteClick = { eng, vn -> deleteFlashCard(eng, vn); changeMessage("Deleted") },
+                    changeMessage = changeMessage
                 )
             }
-
-            // SHOW CARD SCREEN
-            composable<ShowCard> { backStackEntry ->
-                val args = backStackEntry.toRoute<ShowCard>()  // Get the type-safe arguments
-                ShowCardScreen(
-                    cardId = args.cardId,
-                    getFlashCardById = getFlashCardById,
-                    deleteFlashCard = deleteFlashCard,
+            composable<EditCard> { backStackEntry ->
+                val args = backStackEntry.toRoute<EditCard>()
+                EditCardScreen(
+                    oldEnglish = args.english,
+                    oldVietnamese = args.vietnamese,
+                    updateFlashCard = updateFlashCard,
                     navigateBack = { navController.navigateUp() },
                     changeMessage = changeMessage
                 )
+            }
+            // NEW: Login Screen
+            composable<Login> {
+                LoginScreen(
+                    networkService = networkService,
+                    changeMessage = changeMessage,
+                    navigateToken = { email -> navController.navigate(Token(email)) }
+                )
+            }
+            // NEW: Token Screen
+            composable<Token> { backStackEntry ->
+                val args = backStackEntry.toRoute<Token>()
+                TokenScreen(
+                    email = args.email,
+                    changeMessage = changeMessage,
+                    navigateToHome = { navController.navigate(Home) }
+                )
+            }
+            // NEW: Study Cards
+            composable<StudyCards> {
+                StudyCardsScreen(getLesson = getLesson)
             }
         }
     }

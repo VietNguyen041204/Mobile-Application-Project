@@ -48,7 +48,6 @@ fun AddCardScreen(
         Button(
             modifier = Modifier.semantics { contentDescription = "Add" },
             onClick = {
-                //insertFlashCard(FlashCard(uid = 0, englishCard = enWord, vietnameseCard = vnWord))
                 scope.launch {
                     try {
                         insertFlashCard(

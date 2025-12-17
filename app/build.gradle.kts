@@ -91,7 +91,7 @@ configurations {
 
 dependencies {
 
-    implementation(libs.androidx.material.icons.extended) // Add this line
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -120,5 +120,14 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("androidx.navigation:navigation-compose:2.9.6")
+
+    // retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // datastore
+    // Preferences DataStore (SharedPreferences like APIs)
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    // Alternatively - without an Android dependency.
+    implementation("androidx.datastore:datastore-preferences-core:1.2.0")
 }
-// Test rules and transitive dependencies:
