@@ -8,9 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.navigation.compose.rememberNavController
+import okhttp3.OkHttpClient
 //import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 val Context.dataStore by preferencesDataStore(name = "user_credentials")
 val TOKEN = stringPreferencesKey("token")
@@ -38,10 +40,10 @@ class MainActivity : ComponentActivity() {
 
             // network
             // Create a single OkHttpClient instance
-            //val sharedOkHttpClient =
-            //    OkHttpClient.Builder() // Add any desired interceptors, timeouts, etc. to the shared client
-            //        //.addInterceptor())
-            //        .build()
+            val sharedOkHttpClient = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS) // Set connection timeout
+                .readTimeout(30, TimeUnit.SECONDS)    // Set read timeout
+                .build()
 
             // 2. Create the first Retrofit instance, using the shared OkHttpClient
             //.client(sharedOkHttpClient) // Pass the shared client
@@ -54,6 +56,7 @@ class MainActivity : ComponentActivity() {
 
             val retrofit: Retrofit = Retrofit.Builder()
                 .baseUrl("https://placeholder.com")
+                .client(sharedOkHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
 

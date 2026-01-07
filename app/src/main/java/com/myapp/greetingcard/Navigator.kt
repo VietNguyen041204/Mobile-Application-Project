@@ -27,7 +27,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
-import androidx.navigation.NavGraph.Companion.findStartDestination
+//import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 
@@ -51,7 +51,6 @@ fun Navigator(
     var message by remember { mutableStateOf("") }
     val changeMessage = { text:String -> message = text }
 
-    // Helpers
     val insertFlashCard: suspend (FlashCard) -> Unit = { flashCardDao.insertAll(it) }
     val getAllFlashCards: suspend () -> List<FlashCard> = { flashCardDao.getAll() }
     val deleteFlashCard: suspend (String, String) -> Unit = { eng, vn -> flashCardDao.deleteFlashCard(eng, vn) }
@@ -71,7 +70,6 @@ fun Navigator(
                 navigationIcon = {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
-                    // Logic to show Back button only if NOT on Home
                     if (currentRoute != null && !currentRoute.endsWith("Home")) {
                         Button(
                             modifier = Modifier.semantics{contentDescription="navigateBack"},
@@ -123,7 +121,13 @@ fun Navigator(
                     changeMessage = changeMessage
                 )
             }
-            // NEW: Login Screen
+            composable<StudyCards> {
+                StudyCardsScreen(
+                    getAllFlashCards = getAllFlashCards,
+                    networkService = networkService,
+                    changeMessage = changeMessage
+                )
+            }
             composable<Login> {
                 LoginScreen(
                     networkService = networkService,
@@ -131,7 +135,6 @@ fun Navigator(
                     navigateToken = { email -> navController.navigate(Token(email)) }
                 )
             }
-            // NEW: Token Screen
             composable<Token> { backStackEntry ->
                 val args = backStackEntry.toRoute<Token>()
                 TokenScreen(
@@ -139,10 +142,6 @@ fun Navigator(
                     changeMessage = changeMessage,
                     navigateToHome = { navController.navigate(Home) }
                 )
-            }
-            // NEW: Study Cards
-            composable<StudyCards> {
-                StudyCardsScreen(getLesson = getLesson)
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.myapp.greetingcard
 
-import androidx.compose.foundation.background
+import android.util.Base64
+import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,27 +26,122 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+//import androidx.compose.ui.semantics.contentDescription
+//import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
 
+@OptIn(UnstableApi::class)
 @Composable
 fun StudyCardsScreen(
-    getLesson: suspend (Int) -> List<FlashCard>
+    getAllFlashCards: suspend () -> List<FlashCard>,
+    networkService: NetworkService,
+    changeMessage: (String) -> Unit
 ) {
     var lessonCards by remember { mutableStateOf(emptyList<FlashCard>()) }
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) } // false = English, true = Vietnamese
+
+    var hasAudioFile by remember { mutableStateOf(false) }
+    var isGenerating by remember { mutableStateOf(false) }
+
+    var email by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+//    val appContext = context.applicationContext
     val scope = rememberCoroutineScope()
 
-    // Load a new lesson when screen opens
     LaunchedEffect(Unit) {
         scope.launch {
-            val cards = getLesson(3) // Get 3 random cards
-            lessonCards = cards
+            lessonCards = getAllFlashCards()
+
+            val preferences = context.dataStore.data.first()
+            email = preferences[EMAIL] ?: ""
+            token = preferences[TOKEN] ?: ""
+        }
+    }
+
+    //Hashing the filename
+    fun getHashedFilename(word: String): String { // copy: how to hash the filename (dealing wiith file system which doesnt approve UTF8)
+        return try {
+            val bytes = MessageDigest.getInstance("MD5").digest(word.toByteArray())
+            val hashString = bytes.joinToString("") { "%02x".format(it) }
+            "$hashString.mp3"
+        } catch (e: Exception) {
+            "fallback_filename.mp3"
+        }
+    }
+
+    fun checkAudioFile(vietnameseWord: String) {
+        if (vietnameseWord.isBlank()) return
+        val file = File(context.filesDir, getHashedFilename(vietnameseWord))
+        hasAudioFile = file.exists()
+    }
+
+    fun saveAudioToInternalStorage(base64String: String, vietnameseWord: String) {
+        try {
+            val audioData = Base64.decode(base64String, Base64.DEFAULT)
+            val file = File(context.filesDir, getHashedFilename(vietnameseWord))
+            FileOutputStream(file).use { fos ->
+                fos.write(audioData)
+            }
+            hasAudioFile = true
+            changeMessage("Audio saved successfully!")
+        } catch (e: Exception) {
+            changeMessage("Error saving: ${e.message}")
+        }
+    }
+
+    fun playAudio(vietnameseWord: String) {
+        val file = File(context.filesDir, getHashedFilename(vietnameseWord))
+
+        if (!file.exists()) {
+            changeMessage("Audio file not found")
+            return
+        }
+
+        try {
+            val player = ExoPlayer.Builder(context).build()
+            val mediaItem = MediaItem.fromUri(file.toUri())
+
+            player.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        player.release()
+                    }
+                }
+            })
+
+            player.setMediaItem(mediaItem)
+            player.prepare()
+            player.play()
+        } catch (e: Exception) {
+            changeMessage("Error playing audio: ${e.message}")
+        }
+    }
+
+
+    val currentCard = if (lessonCards.isNotEmpty()) lessonCards[currentIndex] else null
+
+    LaunchedEffect(isFlipped, currentIndex) {
+        if (isFlipped && currentCard?.vietnameseCard != null) {
+            checkAudioFile(currentCard.vietnameseCard)
         }
     }
 
@@ -54,21 +150,15 @@ fun StudyCardsScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (lessonCards.isEmpty()) {
-            Text("No cards available to study. Add some first!")
-        } else {
-            val currentCard = lessonCards[currentIndex]
-
-            Text("Card ${currentIndex + 1} of ${lessonCards.size}", fontSize = 14.sp)
+        if (lessonCards.isNotEmpty() && currentCard != null) {
+            Text("Card ${currentIndex + 1} of ${lessonCards.size}")
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // The Flashcard
             Card(
                 modifier = Modifier
                     .size(width = 300.dp, height = 200.dp)
                     .clickable {
-                        // Toggle between English and Vietnamese
                         isFlipped = !isFlipped
                     },
                 colors = CardDefaults.cardColors(
@@ -92,20 +182,64 @@ fun StudyCardsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Show NEXT button only if Vietnamese (isFlipped) is shown
             if (isFlipped) {
+                val vnWord = currentCard.vietnameseCard ?: ""
+
+                if (hasAudioFile) {
+                    // Scenario A: We have the file -> Show Play
+                    Button(onClick = { playAudio(vnWord) }) {
+                        Text("Play Audio")
+                    }
+                } else {
+                    // Scenario B: No file -> Show Generate
+                    Button(
+                        enabled = !isGenerating,
+                        onClick = {
+                            if (email.isBlank() || token.isBlank()) {
+                                changeMessage("Please Log In first!")
+                            } else {
+                                scope.launch {
+                                    isGenerating = true
+                                    changeMessage("Generating audio...")
+                                    try {
+                                        val response = withContext(Dispatchers.IO) {
+                                            networkService.generateAudio(
+                                                request = AudioRequest(vnWord, email, token)
+                                            )
+                                        }
+
+                                        if (response.code == 200) {
+                                            saveAudioToInternalStorage(response.message, vnWord)
+                                        } else {
+                                            changeMessage("API Error: ${response.message}")
+                                        }
+                                    } catch (e: Exception) {
+                                        changeMessage("Network Error: ${e.message}")
+                                    } finally {
+                                        isGenerating = false
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Text(if (isGenerating) "Generating..." else "Generate Audio")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Button(onClick = {
-                    // Move to next card in a loop
                     currentIndex = (currentIndex + 1) % lessonCards.size
-                    // Reset to English side
                     isFlipped = false
+                    hasAudioFile = false
                 }) {
                     Text("Next")
                 }
             } else {
-                // Invisible spacer to keep layout stable
                 Spacer(modifier = Modifier.height(40.dp))
             }
+        } else {
+            Text("No cards found...")
         }
     }
 }

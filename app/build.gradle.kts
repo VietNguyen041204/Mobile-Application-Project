@@ -130,4 +130,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.2.0")
     // Alternatively - without an Android dependency.
     implementation("androidx.datastore:datastore-preferences-core:1.2.0")
+
+    //Media 3 Exoplayer
+    implementation(libs.androidx.media3.exoplayer)
 }
